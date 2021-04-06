@@ -1,0 +1,931 @@
+  <!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>final project</title>
+<style>
+      /* feel free to style the canvas any way you want. If you want it to
+      use the entire window, set width: 100% and height: 100%. */
+      canvas {
+          display: inline;
+          margin: 1px auto;
+          width: 1000px;
+          height: 1000px;
+      }
+    </style>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/three-r95.all.js">
+    "https://cs.wellesley.edu/~cs307/threejs/libs/three-r80.min.js"
+    </script>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls-r95.js">
+    "https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls.js"
+    </script>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/tw-sp21.js">
+    "https://cs.wellesley.edu/~cs307/threejs/libs/tw-fa18.js"
+    </script>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r95.js">
+    "https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui.min.js"
+    </script>
+</head>
+<body>
+  <h2>Annie Liu & Sarah Pardo Final Project CS307</h2>
+  <h3>Happy Hopping Bunny traveling through the seasons</h3>
+  <p>Controls:
+  g: Go
+  spacebar: stop
+  w: increase hop height
+  s: decrease hop height
+</p>
+<script>
+//Scene and camera setup
+// We always need a scene.
+var scene = new THREE.Scene();
+// We always need a renderer
+var renderer = new THREE.WebGLRenderer();
+TW.mainInit(renderer,scene);
+function render() {
+    // assume global variables scene, renderer, and camera
+    renderer.render(scene,camera);
+}
+/* our camera is placed just above eye level with the hopping bunny and placed
+at the origin of the scene (0,-35,0).
+*/
+var cameraParams = {
+    near: 1,
+    far: 150,
+    fov: 80,                  // degrees
+    aspectRatio: 500/500, // HOW from canvas dimensions, see CSS
+    atX: 100,
+    atY: -35,
+    atZ: 100,
+    eyeX: 0,
+    eyeY: -35,
+    eyeZ: 0 ,
+    upX: 0,
+    upY: 1,
+    upZ: 0
+};
+
+/* This function creates a camera using the camera params and has it look towards
+a given vector*/
+function setupCamera (cameraParameters) {
+    // set up an abbreviation
+    var cp = cameraParameters;
+    // create an initial camera with the desired shape
+    var camera = new THREE.PerspectiveCamera(cp.fov,
+                                             cp.aspectRatio,
+                                             cp.near,
+                                             cp.far);
+    // set the camera location and orientation
+    camera.position.set(cp.eyeX, cp.eyeY, cp.eyeZ);
+    camera.up.set(cp.upX, cp.upY, cp.upZ);
+    camera.lookAt(new THREE.Vector3(cp.atX, cp.atY, cp.atZ));
+    return camera;
+}
+
+var camera = setupCamera(cameraParams);
+
+TW.cameraSetup(renderer,
+               scene,
+               {minx: -100, maxx: 100,
+                miny: -100, maxy: 100,
+                minz: -100, maxz: 100});
+
+// ====================================================================
+// FOREST SCENE
+/*
+display forest makes the cylinder room and adds the textures for the four
+seasonsGround. Then it adds trees using the addTrees function. You can change
+the color, texture, size of the trees.
+
+*/
+function displayForest(textures){
+  textures[5].repeat.set(3,3);
+  textures[5].wrapS = THREE.RepeatWrapping;
+  textures[5].wrapT = THREE.RepeatWrapping;
+  var room = new THREE.Object3D();
+
+      function createForest(textures){
+        //forest walls of room
+        /* To add the illusion of seasons on the wall of the cylinder, we
+        spliced four separate pictures together in Preview and then wrapped
+        that one long image along the inside of the cylinder.
+        Our forest is a cylinder with a radius of 100.*/
+        var forest = new THREE.CylinderGeometry( 100, 100, 100, 64, 1, true );
+        var forestMat = new THREE.MeshPhongMaterial( {color: 0xFFFFFF,
+                                                  // seasons.png
+                                                  map: textures[0],
+                                                  specular: THREE.ColorKeywords.white,
+                                                  side: THREE.BackSide,
+                                                  shininess: 0,
+                                                  flatShading: false}
+                                                );
+        var forestMesh = new THREE.Mesh( forest, forestMat );
+        room.add(forestMesh);
+        //ground ground
+        /* Likewise with the ground, we spliced together four separate images
+        in Preview and then mapped that texture onto the circle geometry.*/
+        var floor = new THREE.CircleGeometry( 102, 32 );
+        var floorMat = new THREE.MeshPhongMaterial( {color: 0xFFFFFF,
+                                                  // seasonsGround.png
+                                                  map: textures[1],
+                                                  specular: THREE.ColorKeywords.white,
+                                                  side: THREE.DoubleSide,
+                                                  shininess: 0,
+                                                  flatShading: true}
+                                                );
+        var floorMesh = new THREE.Mesh( floor, floorMat );
+        /* We had to rotate and position our floor to make the ground textures
+        align with the correct seasons. */
+        floorMesh.rotation.x = Math.PI/2;
+        floorMesh.rotation.z = Math.PI/2;
+        floorMesh.position.y = -50
+        room.add( floorMesh );
+        }
+  //invoke create forest to make the cylinder "room" with four seasons
+  createForest(textures);
+
+  //add elements to forest (trees, bushes, pond?)
+      function addTrees(textures){
+        /* The addTrees function makes use of a helper function to create trunks
+        and calls that within two different functions, pineTree and deciduousTree
+        for different style trees. */
+        //add multiple trees to the room object
+        function makeTrunk(textures, radius, height){
+          /* We used a bark image for the texture */
+          var trunk = new THREE.CylinderGeometry( radius, radius, height, 32 );
+          var trunkMat = new THREE.MeshPhongMaterial( {color: 0x73560d,
+                                                    // bark.png
+                                                    map: textures[2],
+                                                    specular: THREE.ColorKeywords.white,
+                                                    side: THREE.DoubleSide,
+                                                    shininess: 0,
+                                                    flatShading: false}
+                                                  );
+          var trunkMesh = new THREE.Mesh( trunk, trunkMat );
+          return trunkMesh;
+        }
+
+        function pineTree(textures, radius, height){
+          /* The pine tree puts a cone of a desired radius and height on top of
+          a proportional tree trunk. */
+          //new 3d object for a tree
+          var tree = new THREE.Object3D();
+          //add trunk to tree
+          trunkMesh = makeTrunk(textures, radius/5, height/2);
+          tree.add(trunkMesh);
+          trunkMesh.position.y = height/4;
+          //add bracnhes to tree
+          var branches = new THREE.ConeGeometry( radius, height, 32 );
+          var branchesMat = new THREE.MeshPhongMaterial( {color: 0xFFFFFF,
+                                                    map: textures[3],
+                                                    specular: THREE.ColorKeywords.green,
+                                                    side: THREE.DoubleSide,
+                                                    shininess: 5,
+                                                    flatShading: false}
+                                                  );
+          var branchesMesh = new THREE.Mesh( branches, branchesMat );
+          branchesMesh.position.y = height;
+          tree.add(branchesMesh);
+          //pine tree returns the 3d object "tree"
+          return tree;
+        }
+
+        function deciduousTree(textures, i, radius, scale, color){
+          /* The deciduous tree puts a sphere of a desired radius on top of
+          a proportional tree trunk. The sphere is stretched using the scale
+          factor in the y direction */
+          //new 3d object for a tree
+          var tree = new THREE.Object3D();
+          //add trunk to tree
+          trunkMesh = makeTrunk(textures, radius/5, 1.5*radius);
+          tree.add(trunkMesh);
+          trunkMesh.position.y = 1.5*radius/2;
+          //add bracnhes to tree
+          var branches = new THREE.SphereGeometry( radius, 32, 32 );
+          var branchesMat = new THREE.MeshPhongMaterial( {color: color,
+                                                    map: textures[i],
+                                                    specular: THREE.ColorKeywords.green,
+                                                    side: THREE.DoubleSide,
+                                                    shininess: 5,
+                                                    flatShading: false}
+                                                  );
+          var branchesMesh = new THREE.Mesh( branches, branchesMat );
+
+          branchesMesh.scale.y = scale;
+          branchesMesh.position.y = 0.85*scale*radius + 1.5*radius;
+          tree.add(branchesMesh);
+          //pine tree returns the 3d object "tree"
+          return tree;
+        }
+        /* The tree coordinates object makes placing each tree more standardized */
+        var tC = {
+            y:-50,
+            //far trees
+            x1: 70,
+            z1: 15,
+            //near trees
+            x2: 20,
+            z2: 40,
+          }
+          //add one tree
+          //tree radius
+          tR = 15;
+          //tree height
+          tH = 20;
+          //tree scale
+          tS = 1.5;
+
+          //spring trees
+          //far
+          var springTree = deciduousTree(textures, 5, tH, tS, 0xff87f5);
+          room.add(springTree);
+          springTree.position.set(-tC.z1,tC.y,tC.x1);
+          //near
+          var springTree2 = deciduousTree(textures, 5, 0.66*tH, tS, 0xff87f5);
+          room.add(springTree2);
+          springTree2.position.set(-tC.z2,tC.y,tC.x2);
+          //far
+          var springTree3 = deciduousTree(textures, 5, 0.85*tH, tS, 0xff87f5);
+          room.add(springTree3);
+          springTree3.position.set(-tC.x1,tC.y,tC.z1);
+          //near
+          var springTree4 = deciduousTree(textures, 5, 0.66*tH, tS, 0xff87f5);
+          room.add(springTree4);
+          springTree4.position.set(-tC.x2,tC.y,tC.z2);
+
+          //winter trees
+          //far tree
+          var winterTree = pineTree(textures, tR, 3*tH);
+          winterTree.position.set(-tC.z1,tC.y,-tC.x1);
+          room.add(winterTree);
+          //near tree
+          var winterTree2 = pineTree(textures, tR, 2*tH);
+          winterTree2.position.set(-tC.z2,tC.y,-tC.x2);
+          room.add(winterTree2);
+
+          //far tree
+          var winterTree3 = pineTree(textures, 1.1*tR, 4*tH);
+          winterTree3.position.set(-tC.x1,tC.y,-tC.z1);
+          room.add(winterTree3);
+
+          //near tree
+          var winterTree4 = pineTree(textures, tR, 3*tH);
+          winterTree4.position.set(-tC.x2,tC.y,-tC.z2);
+          room.add(winterTree4);
+
+          //far tree
+          var winterTree5 = pineTree(textures, 1.1*tR, 3*tH);
+          winterTree5.position.set(-3,tC.y,-80);
+          room.add(winterTree5);
+
+          //near tree
+          var winterTree6 = pineTree(textures, tR, 3*tH);
+          winterTree6.position.set(-95,tC.y,-5);
+          room.add(winterTree6);
+
+          //fall trees
+          //far tree
+          var fallTree = deciduousTree(textures, 4, 1.2*tH, .85*tS, 0xffcc4a);
+          room.add(fallTree);
+          fallTree.position.set(tC.x1,tC.y,-tC.z1);
+
+          //near tree
+          var fallTree2 = deciduousTree(textures, 4, 0.66*tH, tS,  0xffcc4a);
+          room.add(fallTree2);
+          fallTree2.position.set(tC.x2,tC.y,-tC.z2);
+
+          //far tree
+          var fallTree3 = deciduousTree(textures, 4, tH, tS, 0xffcc4a);
+          room.add(fallTree3);
+          fallTree3.position.set(tC.z1,tC.y,-tC.x1);
+
+          //near tree
+          var fallTree4 = deciduousTree(textures, 4, 0.66*tH, tS,  0xffcc4a);
+          room.add(fallTree4);
+          fallTree4.position.set(tC.z2,tC.y,-tC.x2);
+
+          //summer tress
+          //far tree
+          var summerTree = deciduousTree(textures, 4, tH, tS,  0x81f7a8);
+          room.add(summerTree);
+          summerTree.position.set(tC.z1,tC.y,tC.x1);
+
+          //near tree
+          var summerTree2 = deciduousTree(textures, 4, 0.66*tH, tS,  0x81f7a8);
+          room.add(summerTree2);
+          summerTree2.position.set(tC.z2,tC.y,tC.x2);
+
+          //far tree
+          var summerTree3 = deciduousTree(textures, 4, 0.85*tH, tS,  0x81f7a8);
+          room.add(summerTree3);
+          summerTree3.position.set(tC.x1,tC.y,tC.z1);
+
+          //near tree
+          var summerTree4 = deciduousTree(textures, 4, 0.66*tH, tS, 0x81f7a8);
+          room.add(summerTree4);
+          summerTree4.position.set(tC.x2,tC.y,tC.z2);;
+
+          //ADD 4 tree trunks as partitions between the seasons
+          springTrunk = makeTrunk(textures, 2.5, 40);
+          springTrunk.position.set(-1,tC.y+20,18);
+          room.add(springTrunk);
+          summerTrunk = makeTrunk(textures, 2.5, 40);
+          summerTrunk.position.set(18,tC.y+20,-1);
+          room.add(summerTrunk);
+          fallTrunk = makeTrunk(textures, 2.5, 40);
+          fallTrunk.position.set(-1,tC.y+20,-18);
+          room.add(fallTrunk);
+          winterTrunk = makeTrunk(textures, 2.5, 40);
+          winterTrunk.position.set(-18,tC.y+20,-2);
+          room.add(winterTrunk);
+
+
+        }
+
+      function addBushes(textures){
+
+        function createBush(textures, i, radius, scale, color){
+          var bush = new THREE.Object3D();
+          var spheres = [];
+          for (t = 0; t < 4; t++) {
+            var b = new THREE.SphereGeometry( radius, 32, 32 );
+            var bMat = new THREE.MeshPhongMaterial( {color: color,
+                                                      map: textures[i],
+                                                      specular: THREE.ColorKeywords.green,
+                                                      side: THREE.DoubleSide,
+                                                      shininess: 5,
+                                                      flatShading: false}
+                                                    );
+            var bMesh = new THREE.Mesh( b, bMat );
+            spheres[t] = bMesh;
+            bush.add(bMesh)
+            //spheres[t].position.y = radius;
+          }
+          //right
+          spheres[0].position.set(0.75*radius, -0.25*radius,0);
+          //left
+          spheres[1].position.set(-0.75*radius, -0.25*radius,0);
+          //front
+          spheres[2].position.set(0, -0.25*radius,0.50*radius);
+          bush.scale.x = scale;
+          //back
+          spheres[3].scale.y = scale;
+          bush.scale.x = scale;
+          //bush.rotation.y = Math.PI/2;
+          //pine tree returns the 3d object "tree"
+          return bush;
+        }
+        //bush radius
+        bR = 7;
+        //bush scale
+        bS = 1.5;
+        //bush coordinates
+        var bC = {
+            y:-50 + bR,
+            //far trees
+            x1: 85,
+            z1: 15,
+            //near trees
+            x2: 20,
+            z2: 40,
+          }
+        var angle = 0; //start at 0 increase by 30 degrees each loop
+        var max = 12;
+        var bushes = []; //empty array to store the bushes
+        for (j = 0; j < max; j++){
+          if (j >= 0  && j < max/4){
+            //summer
+            var bush = createBush(textures, 4, bR, bS, 0x81f7a8);
+          } else if ((j >= max/4  && j < max/2)){
+            //spring
+            var bush = createBush(textures, 4, bR, bS, 0xd2ffc4);
+          } else if ((j >= max/2  && j < 3*max/4)){
+            //winter
+            var bush = createBush(textures, 6, bR, bS, 0xf3fff0);
+          } else{
+            //fall
+            var bush = createBush(textures, 4, bR, bS, 0xff3414);
+          }
+          bushes[j] = bush;
+          room.add(bush);
+        }
+        //summer
+        //summer fall divide
+        bushes[0].position.set(bC.x1,bC.y,bC.z1+4);
+        bushes[0].rotation.y = -Math.PI/1.8;
+        //summer spring divide
+        bushes[1].position.set(bC.z1+4,bC.y,bC.x1);
+        bushes[1].rotation.y = Math.PI;
+        //middle of summer
+        bushes[2].position.set(40,bC.y,40);
+        bushes[2].rotation.y = -Math.PI/1.3;
+        //spring summer divide
+        bushes[3].position.set(-bC.z1-4,bC.y,bC.x1);
+        bushes[3].rotation.y = Math.PI;
+        //spring winter divide
+        bushes[4].position.set(-bC.x1,bC.y,bC.z1+4);
+        bushes[4].rotation.y = Math.PI/1.8;
+        //middle of spring
+        bushes[5].position.set(-40,bC.y,40);
+        bushes[5].rotation.y = Math.PI/1.3;
+        //winter spring divide
+        bushes[6].position.set(-bC.x1,bC.y,-bC.z1-4);
+        bushes[6].rotation.y = Math.PI/2;
+        //winter fall divide
+        bushes[7].position.set(-bC.z1-4,bC.y,-bC.x1);
+        //middle of winter
+        bushes[8].position.set(-50,bC.y,-50);
+        bushes[8].rotation.y = Math.PI/3;
+        //fall winter divide
+        bushes[9].position.set(bC.z1+4,bC.y,-bC.x1);
+        //fall summer divide
+        bushes[10].position.set(bC.x1,bC.y,-bC.z1-4);
+        bushes[10].rotation.y = -Math.PI/2;
+        //middle of fall
+        bushes[11].position.set(40,bC.y,-40);
+        bushes[11].rotation.y = -Math.PI/4;
+
+      }
+  //invoke addTrees to add the trees to the forest scene
+  addTrees(textures);
+  addBushes(textures);
+  //add the entire "room" object to the scene
+  scene.add( room );
+  //TW.render()
+  render();
+
+}
+// ================================================================
+// bunny code!
+// we copied the bear code and modied it. We added feet to the createleg function
+var bunnyParams = {
+wireframe:false,
+sphereDetail:10,
+cylinderDetail:10,
+nose:true,
+noseRadius:0.3,
+noseRotation:TW.degrees2radians(10),
+ears:true,
+earRadius:0.8,
+earScale:4,
+earAngle:Math.PI/4,
+eyes:true,
+eyeRadius:0.3,
+eyeAngleX:-Math.PI/6,
+eyeAngleY:Math.PI/6,
+arms:true,
+armLength :5,
+armRadiusTop:0.7,
+armRadiusBottom:0.75,
+legs:true,
+legRadius:1.2,
+legScaleZ:1.5,
+legScaleX:0.5,
+legAngle: Math.PI/3, // max is Math.PI/2
+foot:true,
+footRadiusTop:0.5,
+footRadiusBottom:1,
+footLength:2,
+footRotationX:-TW.degrees2radians(60),
+footRotationZ:TW.degrees2radians(20),
+hipWidth:2.5,
+hipHeight:-7,
+head:true,
+headRadius:2,
+bodyRadius:2.1,
+bodyScaleY:1.5,
+bodyColor:"#D08050",
+headColor:"#B07040",
+bodyMaterial:new THREE.MeshPhongMaterial({color: 0xFFFDD0,
+                        specular: THREE.ColorKeywords.white,
+                        side: THREE.FrontSide,
+                        shininess: 0,
+                        flatShading: false}),
+headMaterial:new THREE.MeshPhongMaterial({color: 0xFFFDD0,
+                        specular: THREE.ColorKeywords.white,
+                        side: THREE.FrontSide,
+                        shininess: 0,
+                        flatShading: false}),
+eyeMaterial:new THREE.MeshPhongMaterial({color: 0x000000,
+                        specular: THREE.ColorKeywords.white,
+                        side: THREE.FrontSide,
+                        shininess: 30,
+                        flatShading: false}),
+noseMaterial:new THREE.MeshBasicMaterial({color: 0xff9cd9})
+}
+
+function makeBunny(params) {
+    /* Creates and returns the complete bunny, a mesh, with many
+       attributes specified by params.  ***ADAPTED FROM SCOTT
+       ANDERSON'S TW PACKAGE*** See TW.teddybearParams for the
+       complete list.  This function is long, but composed of
+       reasonable-sized subfunctions. */
+        var bunny = new THREE.Object3D();
+
+        var bodyMaterial = params.bodyMaterial;
+        var headMaterial = params.headMaterial;
+        var eyeMaterial = params.eyeMaterial;
+        var noseMaterial = params.noseMaterial;
+        var body = createBody(params);
+        bunny.add(body);
+        if(params.head) {
+            var head = createHead(params);
+            var bs = params.bodyScaleY || 2;
+            var br = params.bodyRadius || 3;
+            var hr = params.headRadius || 1;
+            // calculate position for the center of the head
+            head.position.y = bs*br+hr;
+            bunny.add(head);
+        }
+        return bunny; // end of function. Just local function definitions below
+
+        function createNose(params) {
+            var sd = params.sphereDetail || 10;
+            var radius = params.noseRadius || 0.6;
+            var noseGeometry = new THREE.SphereGeometry(radius,sd,sd);
+            var noseMesh = new THREE.Mesh(noseGeometry, noseMaterial);
+            noseMesh.name = "nose";
+            return noseMesh;
+        }
+
+        function addNose(head,params) {
+            /* adds a nose to the head. It's placed by creating a composite object
+             * centered in the middle of the head, and positioning the nose at the
+             * head radius on +Z, then rotating around X by a little. */
+            var noseframe = new THREE.Object3D();
+            var nose = createNose(params);
+            var radius = params.headRadius || 2;
+            nose.position.z = radius; // within the noseframe
+            noseframe.add(nose);
+            var angle = params.noseRotation || TW.degrees2radians(10);
+            noseframe.rotation.x = angle;
+            head.add(noseframe);
+            return head;
+        }
+
+        function createEar(params) {
+            // side is 1 (right) or -1 (left)
+            var sd = params.sphereDetail || 10;
+            var radius = params.earRadius || 0.6;
+            var earGeometry = new THREE.SphereGeometry(radius,sd,sd);
+            var ear = new THREE.Mesh(earGeometry, bodyMaterial);
+            //Flattens the sphere to make it look more like a flat disk
+            ear.scale.z = params.earScale || 0.5;
+            return ear;
+        }
+
+
+        function addEar(head,params,side) {
+            /* adds an ear to the head on the right (side=1) or left
+             * (side=-1). The center of the ear is flush with the surface of the
+             * head by moving it out by the radius, and rotating it around the z
+             * axis to get it to the desired height. */
+            var earframe = new THREE.Object3D();
+            var ear = createEar(params);
+            ear.name = (side == 1) ? "right ear" : "left ear";
+            var radius = params.headRadius || 2;
+            var angle = params.earAngle || Math.PI/4;
+            ear.position.x = side * 0.75*radius;
+            ear.position.z = -1.25*radius;// within the earframe
+            earframe.rotation.z = side * angle;
+            if (ear.name == "right ear"){
+              earframe.rotation.x = side *angle;
+            }else{
+              earframe.rotation.x = side *-angle;
+            }
+
+            earframe.add(ear);
+            head.add(earframe);
+            return head;
+        }
+
+        function createEye(params) {
+            var sd = params.sphereDetail || 10;
+            var radius = params.eyeRadius || 0.3;
+            var eyeGeometry = new THREE.SphereGeometry(radius,sd,sd);
+            var eyeMesh = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            return eyeMesh;
+        }
+
+        function addEye(head,params,side) {
+            /* adds an eye to the head on the right (side=1) or left
+             * (side=-1). The center of the eye is flush with the surface of the
+             * head by moving it out along the z axis by the radius, and rotating
+             * it around the x and then y axes to get it to the desired height. */
+            var eyeframe = new THREE.Object3D();
+            var eye = createEye(params);
+            var radius = params.headRadius || 2;
+            eye.position.z = radius; // within the eyeframe
+            var angleX = params.eyeAngleX || -Math.PI/6;
+            var angleY = params.eyeAngleY || Math.PI/6;
+            eyeframe.rotation.x = angleX;
+            eyeframe.rotation.y = side * angleY;
+            eyeframe.name = (side == 1) ? "right eye" : "left eye";
+            eyeframe.add(eye);
+            head.add(eyeframe);
+            return head;
+        }
+
+        function createHead(params) {
+            /* Returns a teddy bunny head object, with origin in the center, and
+             * eyes on the +Z side of the head, and ears on the left (-X) and
+             * right (+X) sides. */
+            var head = new THREE.Object3D();
+
+            var sd = params.sphereDetail || 10;
+            var radius = params.headRadius || 2;
+            var headGeometry = new THREE.SphereGeometry(radius, sd, sd);
+            var headMesh = new THREE.Mesh(headGeometry, headMaterial);
+            headMesh.name = "head";
+            head.add(headMesh);
+            if(params.nose) {
+                addNose(head,params);
+            }
+            if(params.ears) {
+                addEar(head,params,1);
+                addEar(head,params,-1);
+            }
+            if(params.eyes) {
+                addEye(head,params,1);
+                addEye(head,params,-1);
+            }
+            return head;
+        }
+
+        function createLimb(radiusTop, radiusBottom, length, params) {
+            /* returns an Object with the center at the top and the negative Y
+             * axis running down the center. */
+            var limb = new THREE.Object3D();
+            var cd  = params.cylinderDetail || 10;
+            // console.log("cd is "+cd);
+            // Turns out there's an error in Three.js if cd is a non-integer
+            var limbGeom = new THREE.CylinderGeometry(radiusTop,radiusBottom,length,cd);
+            var limbMesh = new THREE.Mesh( limbGeom, headMaterial );
+            limbMesh.position.y = -length/2;
+            limb.add(limbMesh);
+            return limb;
+        }
+
+        function addArm(bunny,params,side) {
+            /* adds an arm to the bunny on the right (side=1) or left (side=-1). */
+            var top = params.armRadiusTop || 0.7;
+            var bot = params.armRadiusBottom || 0.6;
+            var len = params.armLength || 5;
+            var arm = createLimb(top,bot,len,params);
+            var radius = params.bodyRadius || 3;
+            var scale = params.bodyScaleY || 2;
+            var sx = params.shoulderWidth  || radius * 0.3;
+            var sy = params.shoulderHeight || scale * radius * 0.7;
+            arm.position.set( side * sx, sy, 0 );
+            arm.rotation.z = side * Math.PI/2;
+            arm.rotation.y = side * -Math.PI/2.1;
+            arm.name = (side == 1) ? "right arm" : "left arm";
+            if (arm.name == "left arm"){
+              arm.rotation.x = side * -Math.PI/3;
+            }else{
+              arm.rotation.x = side * Math.PI/3;
+            }
+            bunny.add(arm);
+        }
+
+        function createLeg(params) {
+            // side is 1 (right) or -1 (left)
+            // each leg has its own frame because the thigh and the foot
+            // are in the same frame/3d obj
+            var legframe = new THREE.Object3D();
+            //
+            var sd = params.sphereDetail || 10;
+            var radius = params.legRadius || 0.6;
+            var thighGeometry = new THREE.SphereGeometry(radius,sd,sd);
+            var thigh = new THREE.Mesh(thighGeometry, bodyMaterial);
+            //Flattens the sphere to make it look more like a flat disk
+            thigh.scale.z = params.legScaleZ || 0.5;
+            thigh.scale.x = params.legScaleX || 0.5;
+            legframe.add(thigh);
+
+            //add a foot to the leg frame under the thigh
+            var footGeometry = new THREE.SphereGeometry(0.75*radius,sd,sd);
+            var foot = new THREE.Mesh(footGeometry, bodyMaterial);
+            //Flattens the sphere to make it look more like a flat disk
+
+            foot.scale.x = 0.5;
+            foot.scale.y = 1.5;
+            foot.position.set(0,0.25*radius,2*radius);
+            foot.rotation.y = Math.PI/2;
+            foot.rotation.z = Math.PI/6;
+            legframe.add(foot);
+
+            return legframe;
+        }
+
+
+        function addLeg(head,params,side) {
+            /* adds an leg to the body on the right (side=1) or left
+             * (side=-1). The center of the leg is flush with the surface of the
+             * body by moving it out by the radius, and rotating it around the z
+             * axis to get it to the desired height. */
+            var legsframe = new THREE.Object3D();
+            var leg = createLeg(params);
+            leg.name = (side == 1) ? "right leg" : "left leg";
+            var radius = params.bodyRadius || 2;
+            // scale factor to adjust what legAngle is based on the bunny's HEIGHT
+            var angle = params.legAngle || Math.PI/3;
+            leg.position.x = side * 0.95*radius;
+            leg.position.z = -0.75*radius;
+            leg.position.y = -0.75*radius;// within the earframe
+            //leg.rotation.z = side * angle;
+
+
+            if (leg.name == "right leg"){
+              leg.rotation.x = side *angle;
+            }else{
+              leg.rotation.x = side *-angle;
+            }
+
+            legsframe.add(leg);
+
+            bunny.add(legsframe);
+        }
+
+
+        function createBody(params) {
+            var body = new THREE.Object3D();
+            var radius = params.bodyRadius || 3;
+            var sd = params.sphereDetail || 20;
+            var bodyGeom = new THREE.SphereGeometry(radius,sd,sd);
+            var bodyMesh = new THREE.Mesh(bodyGeom, bodyMaterial);
+            var scale = params.bodyScaleY || 2;
+            bodyMesh.scale.y = scale;
+            bodyMesh.rotation.x = Math.PI/6;
+            bodyMesh.position.set(0, radius/4,-radius/2);
+            body.add(bodyMesh);
+            if(params.arms) {
+                addArm(body,params,1);
+                addArm(body,params,-1);
+            }
+            if(params.legs) {
+                addLeg(body,params,1);
+                addLeg(body,params,-1);
+            }
+            return body;
+        }
+    }
+// ================================================================
+// code to make bunny hop in cirlce
+// parameters of the scene and animation
+
+var hopParams = {
+    minHeight: 3.5, //half the height of the bunny
+    bouncePeriod: 3.5,  // time to bounce once, arbitrary time units
+    maxHeight: 15,    // max y position of the center of the ball
+    deltaT: 0.05 ,          // time step between frames, arbitrary time units
+    deltaAng: Math.PI/1440,   // angle step around circle, per time step
+    pause: true, // pause variable - starts at false. linked to " " key
+};
+
+// transforms x in the range [minx,maxx] to y in the range [miny,maxy]
+function increaseMaxHeight(){
+  if(hopParams.maxHeight < 30){
+    hopParams.maxHeight += 3;
+  }
+}
+
+function decreaseMaxHeight(){
+  if(hopParams.maxHeight > 9){
+    hopParams.maxHeight -= 3;
+  }
+}
+function linearMap (x, minx, maxx, miny, maxy) {
+    // t is in the range [0,1]
+    t = (x-minx)/(maxx-minx);
+    y = t*(maxy-miny)+miny;
+    return y;
+};
+
+// sets the position of the ball based on current time
+
+var bunny;        // bunny mesh
+var bunnyHeight;   // ball height at each moment
+var angle = 0;    // current angle around circle
+var time = 0;
+var heightRatio;     // current time
+
+function showBunny () {
+    // displays ball at current time and angle
+    if ( bunny != null ) {
+        scene.remove(bunny);
+    }
+    heightRatio = bunnyHeight/hopParams.maxHeight;
+    //(Math.PI/2-Math.PI/6) this is the max angle minus the min angle of legs
+    bunnyParams.legAngle = ((Math.PI/1.5-Math.PI/6) * heightRatio) + Math.PI/6
+    bunny = makeBunny(bunnyParams);
+    // rescale the time dimension so that the period of bouncing maps to pi
+    var angleC = time * Math.PI / hopParams.bouncePeriod;
+    var abs_cos = Math.abs(Math.cos(angleC));
+    bunnyHeight = linearMap(abs_cos, 0, 1,
+                           hopParams.minHeight, hopParams.maxHeight);
+    // moves around a circular path of radius 10
+    bunny.position.set(-30*Math.cos(angle), -50 + bunnyHeight, -30*Math.sin(angle));
+    scene.add(bunny);
+    bunny.rotation.y -= angle;
+    //update eye params so the camera is following the bunny in the x,y position
+    cameraParams.atX = -30*Math.cos(angle);
+    cameraParams.atZ = -30*Math.sin(angle);
+    camera = setupCamera(cameraParams);
+
+    render();
+
+}
+
+showBunny();     // display ball at time 0
+
+// updates the animation
+function updateState() {
+    time += hopParams.deltaT;
+    angle -= hopParams.deltaAng;
+    showBunny();
+}
+
+// performs one step of the animation
+function oneStep() {
+    updateState();
+    render();
+}
+
+// starts continuous animation loop
+var id;
+
+//need callAnimate so that we can start the animation to begin with.
+//then we can use g and space keys to go and stop.
+function callAnimate(){
+  if (hopParams.pause == false){
+    animate();
+    hopParams.pause = true;
+  }
+}
+
+function animate() {
+    oneStep();
+    id = requestAnimationFrame(animate);
+}
+
+function stopAnimation() {
+  hopParams.pause = false;
+   if (id != null) {
+       cancelAnimationFrame(id);
+   }
+
+}
+
+animate();
+
+TW.setKeyboardCallback(" ", stopAnimation, "stop animation");
+TW.setKeyboardCallback("g", callAnimate, "start animation");
+TW.setKeyboardCallback("w", increaseMaxHeight, "increase hop height");
+TW.setKeyboardCallback("s", decreaseMaxHeight, "decrease hop height");
+// ================================================================
+// lights
+var ambientLight = new THREE.AmbientLight ( 0xA0A0A0, 0.2);
+scene.add(ambientLight);
+
+//directional light
+var directLight = new THREE.DirectionalLight (  0xA0A0A0, 0.5 );
+directLight.position.set(0,1,0);
+scene.add(directLight);
+
+//light in the center of the scene
+var pointLight = new THREE.PointLight ( 0xA0A0A0, 1.2, 100, 1);
+pointLight.position.set(0,-50,0);
+scene.add(pointLight);
+
+//top spotlight
+var spotLight1 = new THREE.SpotLight
+                       ( 0xA0A0A0,      // rgb color of the source, default white
+                         1,  // multiplication factor, default 1
+                         0,   // distance where light ends, default 0
+                         Math.PI/2,      // width of beam in radians, default Math.PI/2
+                         0,   // % spotlight cone attenuated (0-1), default 0
+                         1       // amount light decays with distance, default 1
+                        );
+//position light
+spotLight1.position.set(0,50,0);
+// target is towards the ceiling
+spotLight1.target.position.set(0,0,0);
+scene.add(spotLight1);
+scene.add(spotLight1.target);
+// ================================================================
+//
+
+var loader = new THREE.TextureLoader();
+
+TW.loadTextures(["seasons.png", "seasonsGround.png", "bark.png", "snowyPine.jpeg",
+                "falltexture1.jpeg", "springBlossom.jpg", "snowground.jpeg",
+                ],
+                 function (textures) {
+                    displayForest(textures);
+                 } );
+
+</script>
+</p></body>
+</html>

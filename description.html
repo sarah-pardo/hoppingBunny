@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Final Project</title>
+</head>
+<body>
+<h1>Final Project Description - Sarah Pardo and Annie Liu</h1>
+<h2>CS 307 SP 21</h2>
+<h3>Happy Hopping Bunny</h3>
+
+<h4>Creating the scene</h4>
+<p>Our scene shows a hopping bunny traveling through the seasons in a forest. We
+  drew inspiration from an earlier student project that shows a fox walking
+  through the woods. To get started, we drew some sketches of what a forest
+  scene could look like. Ultimately, we changed the structure of our scene to
+  include four seasons and the ability to continually rotate throug them.
+</p>
+<figure>
+  <img src="sceneSketch.jpeg" width="480" height="640" alt="scene sketch">
+  <figcaption>Preliminary sketch of the scene</figcaption>
+</figure>
+<p>We created a cylinder with a radius of 100 and divided it into quadrants,
+  one for each season. Then we used texture mapping to create the effect of
+  seasonal woods background on the wall and ground on the base of the cylinder.
+</p>
+
+<figure>
+  <img src="scene.png" width="489" height="422" alt="scene">
+  <figcaption>Scene with no trees or bushes</figcaption>
+</figure>
+
+<h4>Adding static objects</h4>
+<p>
+  We added trees and bushes using nested, composite objects. We had a deciduous model and a
+  pine model, and mapped different textures to the trees and bushes according to the
+  season quadrant they belonged in. To help hide the
+  transitions in seasons, we added tree trunks between each "season" that mask
+  the edge of each background image.
+</p>
+
+<figure>
+  <img src="objectsabove.png" width="399.5" height="374" alt="bushes and trees">
+  <figcaption>Placement of bushes, trees, and trunks from above</figcaption>
+</figure>
+
+<figure>
+  <img src="closeuptrees.png" width="405" height="466" alt="closeup of foliage">
+  <figcaption>Closeup of trees and bushes.</figcaption>
+</figure>
+
+<h4>Creating the bunny</h4>
+<p>Before coding our bunny, we sketched out some simple designs with pseudo code
+to get a sense of what THREE.js geometries we would be able to use. </p>
+
+<figure>
+  <img src="bunnySketch.jpeg" width="480" height="640" alt="Bunny sketch">
+  <figcaption>Preliminary sketch of bunny</figcaption>
+</figure>
+<p>
+  Our final bunny is based on the code from the teddy bear function in class. We created
+  functions for the head, torso, and limbs. We used Phong material for the body and eyes of
+  the bunny (giving the eyes a high shininess to make them reflective) and basic material
+  for the nose.
+</p>
+
+<figure>
+  <img src="bunnycloseup.png" alt="closeup of bunny">
+  <figcaption>The bunny up close.</figcaption>
+</figure>
+
+<h4>Animating the bunny and changing the camera</h4>
+<p>
+  We used animation to have our bunny hop in a circle (radius of 30) and simultaneously make
+  the legs rotate while it hops to give the illusion of pushing off the ground. Additionally,
+  we changed the camera position so that it follows the movement of the bunny as it hops
+  around in the circle.
+</p>
+
+<figure>
+  <img src="legup.png" width="495.5" height="384" alt="bunny at low point in jump">
+  <figcaption>Bunny at lowest point of bounce.</figcaption>
+</figure>
+
+<figure>
+  <img src="legdown.png" width="498" height="392" alt="bunny at high point in jump">
+  <figcaption>Bunny at highest point of bounce. Note the difference in the leg
+              and how the camera view point also changed.
+  </figcaption>
+</figure>
+
+<h4>User Interaction and Lighting</h4>
+<p>
+  We implemented simple controls for user interaction, mainly SPC to stop the animation and
+  "g" to continue it. For lighting, we added an ambient, directional, point, and spot light.
+</p>
+
+<a href="demo.html">Link to Demo</a>
+
+</body>
+</html>
