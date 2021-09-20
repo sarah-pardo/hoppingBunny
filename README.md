@@ -1,4 +1,6 @@
 # hoppingBunny
+See demo.html for project code
+
 THREE.js animation of a bunny hopping through a forest while the seasons change
 Final Project Description - Sarah Pardo and Annie Liu
 CS 307 SP 21
